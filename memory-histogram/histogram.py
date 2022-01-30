@@ -8,14 +8,14 @@ import rospy
 import ros_numpy
 
 defResolution = 5
-VFOV, HFOV = 1.02974, (480/640)*1.02974 # radians
+VFOV, HFOV = 1.02974, 1.02974 # radians
 PI = 3.1415
 def getCoor(glob, eps, tau, dist):
     x = glob[0]+dist*np.sin(eps)*np.sin(tau)
     y = glob[1]+dist*np.cos(eps)*np.sin(tau)
     z = glob[2]+dist*np.cos(tau)
     return (x,y,z)
-xyz = np.zeros((480*640,3))
+xyz = np.zeros((90000,3))
 class histogram:
     
     def __init__(self, resolution):
@@ -24,9 +24,9 @@ class histogram:
         self.distance = np.zeros((360/resolution,180/resolution))
         self.bin = np.zeros((360/resolution,180/resolution))
         self.res = resolution
-        self.xyzdistance = np.zeros((480*640,1)) 
-        self.xyd = np.zeros((480*640,1))
-        self.xyz = np.zeros((480*640,3))
+        self.xyzdistance = np.zeros((90000,1)) 
+        self.xyd = np.zeros((90000,1))
+        self.xyz = np.zeros((90000,3))
         rospy.init_node('pclnode', anonymous=True)
         rospy.Subscriber("/camera/depth/points", PointCloud2, self.callback)
     
@@ -42,18 +42,14 @@ class histogram:
         t = time.time()
         self.xyz = np.round(self.xyz, decimals=2)
         #print(self.xyz)
-        self.xyzdistance = np.round(np.sqrt((self.xyz[:,0]*self.xyz[:,0])+(self.xyz[:,1]*self.xyz[:,1])+(self.xyz[:,2]*self.xyz[:,2])))
-        self.xyzdistance = np.clip(self.xyzdistance, 0.1,10, out=None)
-        self.xyd = np.sqrt((self.xyz[:,0]*self.xyz[:,0])+(self.xyz[:,1]*self.xyz[:,1]))
-        self.xyd = np.clip(self.xyd, 0.1, 10, out=None)
-        
-        self.xyzdistance = np.round(self.xyzdistance, decimals=2)
-        self.xyd = np.round(self.xyd, decimals=2)
+        self.xyzdistance = np.round(np.sqrt((self.xyz[:,0]*self.xyz[:,0])+(self.xyz[:,1]*self.xyz[:,1])+(self.xyz[:,2]*self.xyz[:,2])), decimals =2u)
+        self.xyd = np.round(np.sqrt((self.xyz[:,0]*self.xyz[:,0])+(self.xyz[:,1]*self.xyz[:,1])), decimals = 2 )     
+       
 
         print('generated dxyz in:')
         print(time.time()-t)
         t =time.time()
-        
+
         i = 0
         self.epsilon = np.arctan2(self.xyz[:,1],self.xyz[:,0]) + np.pi
         self.epsilon = np.floor((180*self.epsilon) / (self.res*np.pi))
@@ -62,7 +58,7 @@ class histogram:
         self.tau = ((self.tau + self.res - (self.tau % self.res))/self.res - 1).astype(int)
         #for element in self.epsilon:
         #    if(element<0):
-        #        print(':thumbsdown:')
+        #        print('vedang nigger')
         print('generated indices in:')
         print((time.time()-t))
         #self.index = self.index.astype(int)
@@ -96,7 +92,7 @@ class histogram:
             for tauIndex in range(maxTau+1):
                 if(self.bin[epsIndex,tauIndex] == 1):
                     for d in self.xyzdistance:
-                        if((np.abs(self.epsilon[k]-epsIndex)<0.05) and (np.abs(self.tau[k] -  tauIndex))<0.05):
+                        if(((self.epsilon[k]==epsIndex)) and ((self.tau[k] ==tauIndex))):
                             self.distance[epsIndex,tauIndex] = self.distance[epsIndex,tauIndex] + d
                             l += 1
                         k += 1
@@ -111,7 +107,7 @@ class histogram:
         #print(self.distance)
         #if(x==y):
         #    print('BASED')
-
+    
 
     def update(self, posOld, posNew):
         resolution = self.res
@@ -129,22 +125,22 @@ class histogram:
 
         # half resolution build
         updatedAndDownSampled = histogram(2*self.res)
-        coordinateGlobal = np.array(coordinateGlobal)
-        updatedAndDownSampled_xyzdistance = np.sqrt((self.coordinateGlobal[:,0]-posNew[0])*(self.coordinateGlobal[:,0]-posNew[0])
+        coordinateGlobal = np.round(np.array(coordinateGlobal), decimals =2)
+        updatedAndDownSampled_xyzdistance = np.round(np.sqrt((self.coordinateGlobal[:,0]-posNew[0])*(self.coordinateGlobal[:,0]-posNew[0])
         +(self.coordinateGlobal[:,1]-posNew[1])*(self.coordinateGlobal[:,1]-posNew[1])+
-        (self.coordinateGlobal[:,2]-posNew[2])*(self.coordinateGlobal[:,2]-posNew[2]))
+        (self.coordinateGlobal[:,2]-posNew[2])*(self.coordinateGlobal[:,2]-posNew[2])), decimals=2)
 
-        updatedAndDownSampled_dxy = np.sqrt( (self.coordinateGlobal[:,0]-posNew[0])*(self.coordinateGlobal[:,0]-posNew[0])
-        +(self.coordinateGlobal[:,1]-posNew[1])*(self.coordinateGlobal[:,1]-posNew[1]) )
+        updatedAndDownSampled_dxy = np.round(np.sqrt( (self.coordinateGlobal[:,0]-posNew[0])*(self.coordinateGlobal[:,0]-posNew[0])
+        +(self.coordinateGlobal[:,1]-posNew[1])*(self.coordinateGlobal[:,1]-posNew[1]) ), decimals =2)
 
         # the usual build with 6-point implementation
         updatedAndDownSampled_index = np.zeros(coordinateGlobal.shape[0])
 
         updatedAndDownSampled.epsilon = np.floor(np.arctan((updatedAndDownSampled.coordinateGlobal[:,0]-posNew[0])/(updatedAndDownSampled.coordinateGlobal[:,1]-posNew[1])) / updatedAndDownSampled.res)
-        updatedAndDownSampled_index[:,0] = (updatedAndDownSampled.epsilon + updatedAndDownSampled.res - updatedAndDownSampled.epsilon%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1
+        updatedAndDownSampled_index[:,0] = ((updatedAndDownSampled.epsilon + updatedAndDownSampled.res - updatedAndDownSampled.epsilon%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1).astype(int)
 
-        updatedAndDownSampled.tau = np.floor(180*np.arctan((updatedAndDownSampled.xyz[:,2]-posNew[2])/updatedAndDownSampled_dxy[:]) / updatedAndDownSampled.res /PI)
-        updatedAndDownSampled_index[:,1] = (updatedAndDownSampled.tau + updatedAndDownSampled.res - updatedAndDownSampled.tau%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1
+        updatedAndDownSampled.tau = np.floor(180*np.arctan((updatedAndDownSampled.xyz[:,2]-posNew[2])/updatedAndDownSampled_dxy[:]) / updatedAndDownSampled.res /PI) + 90sas
+        updatedAndDownSampled_index[:,1] = ((updatedAndDownSampled.tau + updatedAndDownSampled.res - updatedAndDownSampled.tau%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1).astype(int)
 
         # build bin layer
         for epsIndex in range(360/updatedAndDownSampled.res):
@@ -170,6 +166,7 @@ class histogram:
         upSampled = histogram(self.res)
         for epsilon in range(0,180/self.res-1):
             for tau in range(0,90/self.res-1):
+                #FLAWED!!!!
                 upSampled.distance[2*epsilon, 2*tau] = updatedAndDownSampled.distance[epsilon,tau]
                 upSampled.distance[2*epsilon, 2*tau+1] = updatedAndDownSampled.distance[epsilon,tau]
                 upSampled.distance[2*epsilon+1, 2*tau] = updatedAndDownSampled.distance[epsilon,tau]
@@ -259,4 +256,4 @@ def listener(memoryHistogram):
     rospy.spin()
 
 if __name__ == '__main__':
-    listener(memoryHistogram)    
+    listener(memoryHistogram) 
