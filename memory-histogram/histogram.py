@@ -125,8 +125,7 @@ class histogram:
                     [epsilonInd*self.res-self.res/2, tauInd*self.res+self.res/2],
                     [epsilonInd*self.res+self.res/2, tauInd*self.res+self.res/2]
                 ]
-                #fix this
-                coordinateGlobal.append(getCoor(posOld, corners[0], corners[1] ,self.distance(epsilonInd,tauInd)))
+                coordinateGlobal.append(getCoor(posOld, corners[:,0], corners[:,1] ,self.distance(epsilonInd,tauInd)))
 
         # half resolution build
         updatedAndDownSampled = histogram(2*self.res)
@@ -157,11 +156,13 @@ class histogram:
         # build distance layer
         for epsIndex in range(360/updatedAndDownSampled.res):
             for tauIndex in range(180/updatedAndDownSampled.res):
-                for d in updatedAndDownSampled_xyzdistance:
-                    if(updatedAndDownSampled_index[k,:]== (epsIndex,tauIndex)):
-                        updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex] + d
-                        k = k + 1
-                updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex]/k
+                if (np.count_nonzero(updatedAndDownSampled_index[:,0] == epsIndex) >= 6):
+                    if (np.count_nonzero(updatedAndDownSampled_index[:,1] == tauIndex) >= 6):
+                        for d in updatedAndDownSampled_xyzdistance:
+                            if(updatedAndDownSampled_index[k,:]== (epsIndex,tauIndex)):
+                                updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex] + d
+                                k = k + 1
+                            updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex]/k
                 k = 0
         # change age
         self.age = self.age + 1
