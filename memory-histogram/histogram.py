@@ -56,9 +56,7 @@ class histogram:
         self.epsilon = ((self.epsilon + self.res - (self.epsilon%self.res))/self.res - 1).astype(int)
         self.tau = np.floor(180*np.arctan2(self.xyz[:,2],self.xyd[:]) / (self.res*np.pi)) +90
         self.tau = ((self.tau + self.res - (self.tau % self.res))/self.res - 1).astype(int)
-        #for element in self.epsilon:
-        #    if(element<0):
-        #        print('vedang nigger')
+     
         print('generated indices in:')
         print((time.time()-t))
         #self.index = self.index.astype(int)
@@ -107,7 +105,7 @@ class histogram:
         #print(self.distance)
         #if(x==y):
         #    print('BASED')
-    
+
 
     def update(self, posOld, posNew):
         resolution = self.res
@@ -121,6 +119,7 @@ class histogram:
                     [epsilonInd*self.res-self.res/2, tauInd*self.res+self.res/2],
                     [epsilonInd*self.res+self.res/2, tauInd*self.res+self.res/2]
                 ]
+                #fix this
                 coordinateGlobal.append(getCoor(posOld, corners[:,0], corners[:,1] ,self.distance(epsilonInd,tauInd)))
 
         # half resolution build
@@ -139,7 +138,7 @@ class histogram:
         updatedAndDownSampled.epsilon = np.floor(np.arctan((updatedAndDownSampled.coordinateGlobal[:,0]-posNew[0])/(updatedAndDownSampled.coordinateGlobal[:,1]-posNew[1])) / updatedAndDownSampled.res)
         updatedAndDownSampled_index[:,0] = ((updatedAndDownSampled.epsilon + updatedAndDownSampled.res - updatedAndDownSampled.epsilon%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1).astype(int)
 
-        updatedAndDownSampled.tau = np.floor(180*np.arctan((updatedAndDownSampled.xyz[:,2]-posNew[2])/updatedAndDownSampled_dxy[:]) / updatedAndDownSampled.res /PI) + 90sas
+        updatedAndDownSampled.tau = np.floor(180*np.arctan((updatedAndDownSampled.xyz[:,2]-posNew[2])/updatedAndDownSampled_dxy[:]) / updatedAndDownSampled.res /PI) + 90
         updatedAndDownSampled_index[:,1] = ((updatedAndDownSampled.tau + updatedAndDownSampled.res - updatedAndDownSampled.tau%updatedAndDownSampled.res)/updatedAndDownSampled.res - 1).astype(int)
 
         # build bin layer
@@ -152,13 +151,11 @@ class histogram:
         # build distance layer
         for epsIndex in range(360/updatedAndDownSampled.res):
             for tauIndex in range(180/updatedAndDownSampled.res):
-                if (np.count_nonzero(updatedAndDownSampled_index[:,0] == epsIndex) >= 6):
-                    if (np.count_nonzero(updatedAndDownSampled_index[:,1] == tauIndex) >= 6):
-                        for d in updatedAndDownSampled_xyzdistance:
-                            if(updatedAndDownSampled_index[k,:]== (epsIndex,tauIndex)):
-                                updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex] + d
-                                k = k + 1
-                            updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex]/k
+                for d in updatedAndDownSampled_xyzdistance:
+                    if(updatedAndDownSampled_index[k,:]== (epsIndex,tauIndex)):
+                        updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex] + d
+                        k = k + 1
+                updatedAndDownSampled.distance[epsIndex,tauIndex] = updatedAndDownSampled.distance[epsIndex,tauIndex]/k
                 k = 0
         # change age
         self.age = self.age + 1
@@ -166,7 +163,6 @@ class histogram:
         upSampled = histogram(self.res)
         for epsilon in range(0,180/self.res-1):
             for tau in range(0,90/self.res-1):
-                #FLAWED!!!!
                 upSampled.distance[2*epsilon, 2*tau] = updatedAndDownSampled.distance[epsilon,tau]
                 upSampled.distance[2*epsilon, 2*tau+1] = updatedAndDownSampled.distance[epsilon,tau]
                 upSampled.distance[2*epsilon+1, 2*tau] = updatedAndDownSampled.distance[epsilon,tau]
@@ -256,4 +252,4 @@ def listener(memoryHistogram):
     rospy.spin()
 
 if __name__ == '__main__':
-    listener(memoryHistogram) 
+    listener(memoryHistogram)    
